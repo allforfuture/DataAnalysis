@@ -22,7 +22,7 @@ namespace DataAnalysis
         /// <param name="sheetname">工作表名称</param>
         /// <param name="isFirstRowColumn">第一行是否是DataTable的列名</param>
         /// <returns>DataTable</returns>
-        public static DataTable Excel2DT(string filepath, string sheetname, bool isFirstRowColumn)
+        public static DataTable Excel2DT(string filepath, string sheetname, bool isFirstRowColumn,ref dynamic workExcel)
         {
             ISheet sheet;//工作表
             DataTable data = new DataTable();
@@ -30,9 +30,10 @@ namespace DataAnalysis
             int startrow;
             using (FileStream fs = new FileStream(filepath, FileMode.Open, FileAccess.Read))
             {
+                
+                   dynamic workbook = null;
                 try
                 {
-                    dynamic workbook=null;
                     if (filepath.IndexOf(".xlsx") > 0) // 2007版本
                         workbook = new XSSFWorkbook(fs);
                     else if (filepath.IndexOf(".xls") > 0) // 2003版本
@@ -104,7 +105,12 @@ namespace DataAnalysis
                     MessageBox.Show("Exception: " + ex.Message, "ReadFile", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return null;
                 }
-                finally { fs.Close(); fs.Dispose(); }
+                finally
+                {
+                    fs.Close();
+                    fs.Dispose();
+                    workExcel = workbook;
+                }
             }
         }
 
@@ -189,6 +195,95 @@ namespace DataAnalysis
                                 string endC = NPOIHelper.Chr((Int_A + j)-2);
                                 //IF(T2>5,"Range>5","")
                                 string formula = String.Format("IF({0}{1}>5,\"Range > 5\",\"\")", endC,  i + 2);
+                                row.CreateCell(j).CellFormula = formula;
+                            }
+                        }
+                        count++;
+                    }
+                    workbook.Write(fs); //写入到excel
+                    return count;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Exception: " + ex.Message);
+                    return -1;
+                }
+                finally { fs.Close(); fs.Dispose(); }
+            }
+        }
+
+        /// <summary>
+        /// 将DataTable导入到Excel
+        /// </summary>
+        /// <param name="data">要导入的数据</param>
+        /// <param name="filepath">导入的文件路径（包含文件名称）</param>
+        /// <param name="sheename">要导入的表名</param>
+        /// <param name="iscolumwrite">是否写入列名</param>
+        /// <returns>导入Excel的行数</returns>
+        public static int DT2Excel_Cover(DataTable data, dynamic workbook, string filepath, string sheename, bool iscolumwrite)
+        {
+            int i, j, count;
+            ISheet sheet;
+            using (FileStream fs = new FileStream(filepath, FileMode.OpenOrCreate, FileAccess.ReadWrite))
+            {
+                try
+                {
+                    if (workbook != null)
+                    {
+                        sheet = workbook.CreateSheet(sheename);
+                    }
+                    else
+                    {
+                        return -1;
+                    }
+
+                    if (iscolumwrite == true) //写入DataTable的列名
+                    {
+                        IRow row = sheet.CreateRow(0);
+                        for (j = 0; j < data.Columns.Count; ++j)
+                        {
+                            row.CreateCell(j).SetCellValue(data.Columns[j].ColumnName);
+                        }
+                        count = 1;
+                    }
+                    else
+                    {
+                        count = 0;
+                    }
+
+                    for (i = 0; i < data.Rows.Count; ++i)
+                    {
+                        IRow row = sheet.CreateRow(count);
+                        for (j = 0; j < data.Columns.Count + 3; ++j)
+                        {
+                            if (j < data.Columns.Count && data.Rows[i][j] != "")
+                                row.CreateCell(j).SetCellValue(Convert.ToDouble(data.Rows[i][j]));
+                            //写入公式（极差）
+                            else if (j == data.Columns.Count)
+                            {
+                                int Int_A = 65;//A的ascii码
+                                string startC = NPOIHelper.Chr(Int_A + 1);//B开始
+                                string endC = NPOIHelper.Chr((Int_A + j) - 1);
+                                string formula = String.Format("MAX({0}{2}:{1}{2})-MIN({0}{2}:{1}{2})", startC, endC, i + 2);
+                                row.CreateCell(j).CellFormula = formula;
+                            }
+                            //写入公式（平均数）
+                            else if (j == data.Columns.Count + 1)
+                            {
+                                int Int_A = 65;
+                                string startC = NPOIHelper.Chr(Int_A + 1);
+                                string endC = NPOIHelper.Chr((Int_A + j) - 2);
+                                string formula = String.Format("AVERAGE({0}{2}:{1}{2})", startC, endC, i + 2);
+                                row.CreateCell(j).CellFormula = formula;
+                            }
+                            //写入公式（异常显示）
+                            else if (j == data.Columns.Count + 2)
+                            {
+                                int Int_A = 65;
+                                //string startC = NPOIHelper.Chr(Int_A + 1);
+                                string endC = NPOIHelper.Chr((Int_A + j) - 2);
+                                //IF(T2>5,"Range>5","")
+                                string formula = String.Format("IF({0}{1}>5,\"Range > 5\",\"\")", endC, i + 2);
                                 row.CreateCell(j).CellFormula = formula;
                             }
                         }
