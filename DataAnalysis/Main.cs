@@ -8,26 +8,48 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
+using System.Configuration;
+
 namespace DataAnalysis
 {
     public partial class Main : Form
     {
-        string filepath { get { return txtFilePath.Text; } }
-        string sheetName { get { return txtSheetName.Text; } }
-
-        bool isFirstRowColumn { get { return checkColName.Checked; } }
+        string InputPath { get { return txtInputPath.Text; } }
+        string OutputPath { get { return txtOutputPath.Text; } }
+        string SheetName { get { return txtSheetName.Text; } }
+        bool IsFirstRowColumn { get { return checkColName.Checked; } }
+        public int MaxRows { get { return Convert.ToUInt16(numRow.Value); } }
+        public static Main main;
 
         public Main()
         {
             InitializeComponent();
             Text = Application.ProductName + " " + Application.ProductVersion;
+            txtInputPath.Text = ConfigurationManager.AppSettings["inputPath"];
+            txtOutputPath.Text = ConfigurationManager.AppSettings["outputPath"];
+            txtSheetName.Text = ConfigurationManager.AppSettings["sheetName"];
+            numRow.Value = Convert.ToUInt16(ConfigurationManager.AppSettings["numRow"]);
+            main = this;
         }
 
         private void btnRun_Click(object sender, EventArgs e)
         {
-            DataTable dt=new NPOIHelper().ExcelToDataTable(filepath, sheetName, isFirstRowColumn);
-            //大于1200小于301
-            dgv.DataSource = dt;
+            try
+            {
+                //导入读取Excel
+                DataTable dateExcel = NPOIHelper.Excel2DT(InputPath, SheetName, IsFirstRowColumn);
+                //按所需屏蔽符合要求的单元格
+                DataTable dataExcelConceal = Data.Helper.changeDT(dateExcel);
+                //显示
+                dgv.DataSource = dataExcelConceal;
+                //导出Excel
+                NPOIHelper.DT2Excel(dataExcelConceal, OutputPath, SheetName, true);
+                MessageBox.Show("Done");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Excel:", MessageBoxButtons.OK,MessageBoxIcon.Error);
+            }
         }
     }
 }

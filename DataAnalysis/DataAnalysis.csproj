@@ -54,6 +54,7 @@
       <HintPath>dll\NPOI.OpenXmlFormats.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -66,6 +67,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Data\Helper.cs" />
     <Compile Include="NPOIHelper.cs" />
     <Compile Include="Main.cs">
       <SubType>Form</SubType>
