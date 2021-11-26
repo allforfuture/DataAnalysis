@@ -14,7 +14,7 @@ namespace DataAnalysis.Data
         //public List<List<double>> cell;
 
         /// <summary>
-        /// 大于1200小于301的数据掩盖
+        /// 大于1400小于301的数据掩盖
         /// </summary>
         /// <param name="dt"></param>
         /// <returns></returns>
@@ -25,7 +25,7 @@ namespace DataAnalysis.Data
                 for (int c = 1; c < dt.Columns.Count; c++)
                 {
                     double cell = Convert.ToDouble(dt.Rows[r][c].ToString());
-                    if (cell < 301 || cell > 1200)
+                    if (cell < 301 || cell > 1400)
                         //null识别不了
                         //dt.Rows[r][c] = null;
                         dt.Rows[r][c] = "";
